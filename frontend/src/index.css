@@ -281,6 +281,133 @@ td {
   margin-top: 10px;
 }
 
+.section-input-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.time-slot-group {
+  display: grid;
+  gap: 8px;
+}
+
+.time-slot-label {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.day-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.day-btn {
+  width: auto;
+  padding: 6px 12px;
+  border-radius: 6px;
+  background: #f1f5f9;
+  color: #374151;
+  border: 1.5px solid #d1d5db;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.15s ease,
+    box-shadow 0.2s ease;
+}
+
+.day-btn:hover:not(:disabled) {
+  background: #dbeafe;
+  border-color: #93c5fd;
+  color: #1e40af;
+  transform: scale(1.03);
+  box-shadow: none;
+}
+
+.day-btn-active {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+  color: #ffffff;
+}
+
+.day-btn-active:hover:not(:disabled) {
+  background: #1e40af;
+  border-color: #1e40af;
+  color: #ffffff;
+}
+
+.time-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.time-label {
+  display: grid;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Section list */
+
+.section-list {
+  margin-top: 20px;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.section-list h3 {
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: #6b7280;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.section-item {
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 12px 14px;
+  animation: slideUp 0.25s ease both;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.section-item:hover {
+  background: #f0f4ff;
+  border-color: #bfdbfe;
+}
+
+.section-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.section-name {
+  font-weight: 600;
+  font-size: 15px;
+  color: #111827;
+}
+
+.section-item-details {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tag-time {
+  background: #ede9fe;
+  color: #5b21b6;
+}
+
 .empty-state {
   color: #6b7280;
 }
