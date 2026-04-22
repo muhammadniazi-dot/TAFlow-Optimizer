@@ -23,6 +23,10 @@ const App = () => {
     setSections((prev) => [...prev, section]);
   };
 
+  const removeSection = (index) => {
+    setSections((prev) => prev.filter((_, currentIndex) => currentIndex !== index));
+  };
+
   const handleOptimize = async () => {
     setIsLoading(true);
     setError('');
@@ -50,7 +54,7 @@ const App = () => {
 
       <div className="layout-grid">
         <TAInput onAddTA={addTA} tas={tas} onRemoveTA={removeTA} />
-        <SectionInput onAddSection={addSection} />
+        <SectionInput onAddSection={addSection} sections={sections} onRemoveSection={removeSection} />
       </div>
 
       <section className="card">
