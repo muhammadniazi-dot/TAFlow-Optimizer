@@ -15,6 +15,10 @@ const App = () => {
     setTAs((prev) => [...prev, ta]);
   };
 
+  const removeTA = (index) => {
+    setTAs((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const addSection = (section) => {
     setSections((prev) => [...prev, section]);
   };
@@ -45,7 +49,7 @@ const App = () => {
       </header>
 
       <div className="layout-grid">
-        <TAInput onAddTA={addTA} />
+        <TAInput onAddTA={addTA} tas={tas} onRemoveTA={removeTA} />
         <SectionInput onAddSection={addSection} />
       </div>
 
