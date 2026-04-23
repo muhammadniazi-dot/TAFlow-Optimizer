@@ -1,3 +1,5 @@
+const MAX_ASSIGNMENTS_PER_TA = 2;
+
 const normalizeList = (value) => {
   if (Array.isArray(value)) {
     return value.map((item) => String(item).trim().toLowerCase()).filter(Boolean);
@@ -21,170 +23,119 @@ const toTARecord = (ta) => ({
   assignedTimeSlots: new Set()
 });
 
-const chooseBestTA = (taPool, section) => {
-  const requiredSkill = String(section?.requiredSkill || '').trim().toLowerCase();
-  const timeSlot = String(section?.timeSlot || '').trim().toLowerCase();
+/**
+ * Find TAs that satisfy both the required skill and availability for a section.
+ */
+const findEligibleTAs = (taPool, section) => {
+  const requiredSkill = section.requiredSkill.toLowerCase();
+  const time = section.time.toLowerCase();
 
-  const candidates = taPool.filter((ta) => ta.skills.includes(requiredSkill));
-
-  if (candidates.length === 0) {
-    return { ta: null, hasTimeConflict: true, isAvailable: false };
-  }
-
-  let bestCandidate = null;
-  let bestScore = Number.POSITIVE_INFINITY;
-
-  for (const ta of candidates) {
-    const isAvailable = ta.availability.includes(timeSlot);
-    const hasTimeConflict = ta.assignedTimeSlots.has(timeSlot);
-
-    const availabilityPenalty = isAvailable ? 0 : 100;
-    const overlapPenalty = hasTimeConflict ? 50 : 0;
-    const balancePenalty = ta.assignments.length * 10;
-
-    const score = availabilityPenalty + overlapPenalty + balancePenalty;
-
-    if (score < bestScore) {
-      bestScore = score;
-      bestCandidate = {
-        ta,
-        hasTimeConflict,
-        isAvailable
-      };
-      continue;
-    }
-
-    if (score === bestScore && bestCandidate && ta.assignments.length < bestCandidate.ta.assignments.length) {
-      bestCandidate = {
-        ta,
-        hasTimeConflict,
-        isAvailable
-      };
-      continue;
-    }
-
-    if (score === bestScore && bestCandidate && ta.assignments.length === bestCandidate.ta.assignments.length) {
-      if (ta.name.localeCompare(bestCandidate.ta.name) < 0) {
-        bestCandidate = {
-          ta,
-          hasTimeConflict,
-          isAvailable
-        };
-      }
-    }
-  }
-
-  return bestCandidate;
+  return taPool.filter(
+    (ta) => ta.skills.includes(requiredSkill) && ta.availability.includes(time)
+  );
 };
 
-const buildReason = (ta, section, hasTimeConflict, isAvailable, isOverloaded) => {
-  if (isOverloaded) {
-    return `${ta.name} has been assigned more than 2 sections, exceeding recommended workload`;
-  }
-  if (hasTimeConflict) {
-    return `${ta.name} has a time slot conflict at ${section.timeSlot}`;
-  }
-  if (!isAvailable) {
-    return `${ta.name} was selected due to matching skill but is not available at ${section.timeSlot}`;
-  }
-  return `Selected due to matching skill (${section.requiredSkill}) and availability at ${section.timeSlot}`;
+/**
+ * Calculate a suitability score for a TA relative to a section.
+ * Higher score = better candidate.
+ *   +2 for matching skill
+ *   +1 for being available at the section time
+ *   -1 for each existing assignment (workload penalty)
+ */
+const calculateScore = (ta, section) => {
+  const requiredSkill = section.requiredSkill.toLowerCase();
+  const time = section.time.toLowerCase();
+
+  let score = 0;
+  if (ta.skills.includes(requiredSkill)) score += 2;
+  if (ta.availability.includes(time)) score += 1;
+  score -= ta.assignments.length;
+
+  return score;
+};
+
+/**
+ * Detect whether assigning this TA to the given time would create a time conflict
+ * (i.e., the TA already has another assignment at the same time slot).
+ */
+const detectConflicts = (ta, time) => {
+  return ta.assignedTimeSlots.has(time.toLowerCase());
 };
 
 const generateAssignments = (tas = [], sections = []) => {
+  if (tas.length === 0 || sections.length === 0) {
+    return { assignments: [] };
+  }
+
   const taPool = tas.map(toTARecord).filter((ta) => ta.name);
+
   const normalizedSections = sections.map((section) => ({
-    courseName: String(section?.courseName || '').trim(),
-    timeSlot: String(section?.timeSlot || '').trim(),
+    course: String(section?.course || '').trim(),
+    time: String(section?.time || '').trim(),
     requiredSkill: String(section?.requiredSkill || '').trim()
   }));
 
-  const assignments = [];
-  const issueFlags = [];
-
-  for (const section of normalizedSections) {
-    if (!section.courseName || !section.timeSlot || !section.requiredSkill) {
-      assignments.push({
+  const assignments = normalizedSections.map((section) => {
+    if (!section.course || !section.time || !section.requiredSkill) {
+      return {
         ta: 'Unassigned',
-        section: section.courseName || 'Unknown Section',
-        time: section.timeSlot || 'Unknown Time',
+        section: section.course || 'Unknown Section',
+        time: section.time || 'Unknown Time',
         status: 'Unassigned',
-        reason: 'Section is missing required fields (courseName, timeSlot, or requiredSkill)'
-      });
-      issueFlags.push({ taName: null, timeConflict: false, unassigned: true });
-      continue;
+        reason: 'No suitable TA found'
+      };
     }
 
-    const choice = chooseBestTA(taPool, section);
+    const eligibleTAs = findEligibleTAs(taPool, section);
 
-    if (!choice?.ta) {
-      assignments.push({
+    if (eligibleTAs.length === 0) {
+      return {
         ta: 'Unassigned',
-        section: section.courseName,
-        time: section.timeSlot,
+        section: section.course,
+        time: section.time,
         status: 'Unassigned',
-        reason: `No TA with the required skill (${section.requiredSkill}) is available`
-      });
-      issueFlags.push({ taName: null, timeConflict: false, unassigned: true });
-      continue;
+        reason: 'No suitable TA found'
+      };
     }
 
-    const { ta, hasTimeConflict, isAvailable } = choice;
-    ta.assignments.push(section.courseName);
-    ta.assignedTimeSlots.add(section.timeSlot.toLowerCase());
+    const candidateScores = eligibleTAs.map((ta) => ({
+      ta,
+      score: calculateScore(ta, section)
+    }));
 
-    assignments.push({
-      ta: ta.name,
-      section: section.courseName,
-      time: section.timeSlot,
-      status: hasTimeConflict || !isAvailable ? 'Conflict' : 'OK',
-      reason: buildReason(ta, section, hasTimeConflict, isAvailable, false)
+    candidateScores.sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      return a.ta.name.localeCompare(b.ta.name);
     });
 
-    issueFlags.push({ taName: ta.name, timeConflict: hasTimeConflict || !isAvailable, unassigned: false });
-  }
+    const bestTA = candidateScores[0].ta;
+    const hasTimeConflict = detectConflicts(bestTA, section.time);
 
-  const taAssignmentCounts = taPool.reduce((accumulator, ta) => {
-    accumulator[ta.name] = ta.assignments.length;
-    return accumulator;
-  }, {});
+    bestTA.assignments.push(section.course);
+    bestTA.assignedTimeSlots.add(section.time.toLowerCase());
 
-  const taOverloaded = Object.entries(taAssignmentCounts).reduce((accumulator, [name, count]) => {
-    accumulator[name] = count > 2;
-    return accumulator;
-  }, {});
+    const isOverloaded = bestTA.assignments.length > MAX_ASSIGNMENTS_PER_TA;
 
-  const finalAssignments = assignments.map((assignment, index) => {
-    const taName = assignment.ta;
-    const overload = taOverloaded[taName];
-    const flag = issueFlags[index];
+    let status = 'OK';
+    let reason = 'Matched based on skill and availability';
 
-    if (flag?.unassigned) {
-      return assignment;
+    if (hasTimeConflict) {
+      status = 'Conflict';
+    } else if (isOverloaded) {
+      status = 'Overloaded';
+      reason = 'Assigned despite high workload';
     }
 
-    if (overload) {
-      const ta = taPool.find((t) => t.name === taName);
-      const section = normalizedSections[index];
-      return {
-        ...assignment,
-        status: 'Overloaded',
-        reason: ta && section ? buildReason(ta, section, false, true, true) : 'Unable to generate detailed reason: TA or section data not found for this assignment'
-      };
-    }
-
-    if (flag?.timeConflict) {
-      return {
-        ...assignment,
-        status: 'Conflict'
-      };
-    }
-
-    return assignment;
+    return {
+      ta: bestTA.name,
+      section: section.course,
+      time: section.time,
+      status,
+      reason
+    };
   });
 
-  return {
-    assignments: finalAssignments
-  };
+  return { assignments };
 };
 
 module.exports = {

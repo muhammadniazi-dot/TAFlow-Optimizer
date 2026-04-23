@@ -21,14 +21,14 @@ const validateTAs = (tas) => {
 const validateSections = (sections) => {
   for (let i = 0; i < sections.length; i++) {
     const section = sections[i];
-    if (!isValidString(section.courseName)) {
-      return `Section at index ${i} is missing a valid "courseName" field.`;
+    if (!isValidString(section.course)) {
+      return `Section at index ${i} is missing a valid "course" field.`;
     }
-    if (!isValidString(section.timeSlot)) {
-      return `Section "${section.courseName}" is missing a valid "timeSlot" field.`;
+    if (!isValidString(section.time)) {
+      return `Section "${section.course}" is missing a valid "time" field.`;
     }
     if (!isValidString(section.requiredSkill)) {
-      return `Section "${section.courseName}" is missing a valid "requiredSkill" field.`;
+      return `Section "${section.course}" is missing a valid "requiredSkill" field.`;
     }
   }
   return null;

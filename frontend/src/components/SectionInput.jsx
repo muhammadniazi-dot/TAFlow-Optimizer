@@ -69,8 +69,8 @@ const SectionInput = ({ onAddSection, sections, onRemoveSection }) => {
     const timeSlot = formatTimeSlot({ day, start: startTime, end: endTime });
 
     onAddSection({
-      courseName: courseName.trim(),
-      timeSlot,
+      course: courseName.trim(),
+      time: timeSlot,
       requiredSkill: requiredSkill.trim()
     });
 
@@ -170,12 +170,12 @@ const SectionInput = ({ onAddSection, sections, onRemoveSection }) => {
           {sections.map((section, index) => (
             <div key={index} className="section-item">
               <div className="section-item-header">
-                <span className="section-name">📚 {section.courseName}</span>
+                <span className="section-name">📚 {section.course}</span>
                 <button
                   type="button"
                   className="btn-remove"
                   onClick={() => onRemoveSection(index)}
-                  aria-label={`Remove ${section.courseName}`}
+                  aria-label={`Remove ${section.course}`}
                 >
                   ✕
                 </button>
@@ -183,7 +183,7 @@ const SectionInput = ({ onAddSection, sections, onRemoveSection }) => {
               <div className="section-item-details">
                 <div className="tag-group">
                   <span className="tag-label">Time:</span>
-                  <span className="tag tag-time">🕐 {section.timeSlot}</span>
+                  <span className="tag tag-time">🕐 {section.time}</span>
                 </div>
                 <div className="tag-group">
                   <span className="tag-label">Skill:</span>
