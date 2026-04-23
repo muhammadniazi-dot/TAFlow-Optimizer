@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 
@@ -22,6 +22,15 @@ const SectionInput = ({ onAddSection, sections, onRemoveSection }) => {
   const [endTime, setEndTime] = useState('');
   const [requiredSkill, setRequiredSkill] = useState('');
   const [errors, setErrors] = useState({});
+
+  const [successMessage, setSuccessMessage] = useState('');
+  const toastTimerRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    };
+  }, []);
 
   const resetForm = () => {
     setCourseName('');
@@ -75,6 +84,9 @@ const SectionInput = ({ onAddSection, sections, onRemoveSection }) => {
     });
 
     resetForm();
+    setSuccessMessage(`Section "${courseName.trim()}" added successfully.`);
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => setSuccessMessage(''), 3000);
   };
 
   return (
@@ -162,6 +174,12 @@ const SectionInput = ({ onAddSection, sections, onRemoveSection }) => {
         <button type="submit" className="btn-add">
           Add Section
         </button>
+        {successMessage && (
+          <div className="toast-success" role="status">
+            <span className="toast-icon">✓</span>
+            {successMessage}
+          </div>
+        )}
       </form>
 
       {sections && sections.length > 0 && (

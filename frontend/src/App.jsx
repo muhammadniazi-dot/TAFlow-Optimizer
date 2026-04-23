@@ -136,16 +136,26 @@ const App = () => {
 
       <section className="card summary-panel">
         <h2>Current Input</h2>
-        <p>
-          TAs: <strong>{tas.length}</strong> | Sections: <strong>{sections.length}</strong>
-        </p>
-        <button type="button" onClick={handleOptimize} disabled={disableOptimize}>
-          {isLoading ? 'Optimizing...' : 'Run Optimizer'}
-        </button>
-        {error ? <p className="error-text">{error}</p> : null}
+        <div className="summary-counts">
+          <span>TAs: <strong>{tas.length}</strong></span>
+          <span>Sections: <strong>{sections.length}</strong></span>
+        </div>
+        <div className="summary-actions">
+          <button type="button" className="btn-optimize" onClick={handleOptimize} disabled={disableOptimize}>
+            {isLoading ? (
+              <>
+                <span className="spinner" aria-hidden="true" />
+                Optimizing…
+              </>
+            ) : (
+              '⚡ Run Optimizer'
+            )}
+          </button>
+          {error ? <p className="error-text">{error}</p> : null}
+        </div>
       </section>
 
-      <AssignmentTable assignments={assignments} />
+      <AssignmentTable assignments={assignments} isLoading={isLoading} />
     </main>
   );
 };

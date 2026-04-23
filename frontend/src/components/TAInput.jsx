@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 
@@ -28,6 +28,15 @@ const TAInput = ({ onAddTA, tas, onRemoveTA }) => {
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
   const [errors, setErrors] = useState({});
+
+  const [successMessage, setSuccessMessage] = useState('');
+  const toastTimerRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    };
+  }, []);
 
   const resetForm = () => {
     setName('');
@@ -69,6 +78,9 @@ const TAInput = ({ onAddTA, tas, onRemoveTA }) => {
     });
 
     resetForm();
+    setSuccessMessage(`TA "${name.trim()}" added successfully.`);
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => setSuccessMessage(''), 3000);
   };
 
   return (
@@ -209,6 +221,12 @@ const TAInput = ({ onAddTA, tas, onRemoveTA }) => {
         <button type="submit" className="btn-add">
           Add TA
         </button>
+        {successMessage && (
+          <div className="toast-success" role="status">
+            <span className="toast-icon">✓</span>
+            {successMessage}
+          </div>
+        )}
       </form>
 
       {tas && tas.length > 0 && (
