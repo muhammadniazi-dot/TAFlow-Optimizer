@@ -141,7 +141,12 @@ const App = () => {
           <span>Sections: <strong>{sections.length}</strong></span>
         </div>
         <div className="summary-actions">
-          <button type="button" className="btn-optimize" onClick={handleOptimize} disabled={disableOptimize}>
+          <button
+            type="button"
+            className="btn-optimize"
+            onClick={() => handleOptimize()}
+            disabled={disableOptimize}
+          >
             {isLoading ? (
               <>
                 <span className="spinner" aria-hidden="true" />
