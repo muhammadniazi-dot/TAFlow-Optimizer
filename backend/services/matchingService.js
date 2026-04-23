@@ -168,7 +168,7 @@ const generateAssignments = (tas = [], sections = []) => {
       return {
         ...assignment,
         status: 'Overloaded',
-        reason: ta && section ? buildReason(ta, section, false, true, true) : 'TA has exceeded recommended workload'
+        reason: ta && section ? buildReason(ta, section, false, true, true) : 'Assignment is overloaded but detailed reason could not be generated'
       };
     }
 
