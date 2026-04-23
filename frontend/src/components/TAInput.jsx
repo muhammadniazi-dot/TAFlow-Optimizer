@@ -1,21 +1,41 @@
 import { useState } from 'react';
 
+const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+
 const parseCommaSeparated = (value) =>
   value
     .split(',')
     .map((item) => item.trim())
     .filter(Boolean);
 
+const formatTime12 = (time24) => {
+  if (!time24) return '';
+  const [hourStr, minuteStr] = time24.split(':');
+  let hour = parseInt(hourStr, 10);
+  const period = hour >= 12 ? 'PM' : 'AM';
+  if (hour === 0) hour = 12;
+  else if (hour > 12) hour -= 12;
+  return `${hour}:${minuteStr} ${period}`;
+};
+
+const formatTimeSlot = ({ day, start, end }) => `${day} ${formatTime12(start)} – ${formatTime12(end)}`;
+
 const TAInput = ({ onAddTA, tas, onRemoveTA }) => {
   const [name, setName] = useState('');
   const [skills, setSkills] = useState('');
-  const [availability, setAvailability] = useState('');
+  const [availabilitySlots, setAvailabilitySlots] = useState([]);
+  const [day, setDay] = useState('Mon');
+  const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime] = useState('');
   const [errors, setErrors] = useState({});
 
   const resetForm = () => {
     setName('');
     setSkills('');
-    setAvailability('');
+    setAvailabilitySlots([]);
+    setDay('Mon');
+    setStartTime('');
+    setEndTime('');
     setErrors({});
   };
 
@@ -27,7 +47,7 @@ const TAInput = ({ onAddTA, tas, onRemoveTA }) => {
     if (parseCommaSeparated(skills).length === 0) {
       newErrors.skills = 'At least one skill is required.';
     }
-    if (parseCommaSeparated(availability).length === 0) {
+    if (availabilitySlots.length === 0) {
       newErrors.availability = 'At least one availability slot is required.';
     }
     return newErrors;
@@ -45,7 +65,7 @@ const TAInput = ({ onAddTA, tas, onRemoveTA }) => {
     onAddTA({
       name: name.trim(),
       skills: parseCommaSeparated(skills),
-      availability: parseCommaSeparated(availability)
+      availability: availabilitySlots.slice()
     });
 
     resetForm();
@@ -85,22 +105,106 @@ const TAInput = ({ onAddTA, tas, onRemoveTA }) => {
           {errors.skills && <span className="validation-error">{errors.skills}</span>}
         </label>
 
-        <label>
-          Availability (comma-separated)
-          <input
-            type="text"
-            value={availability}
-            onChange={(event) => {
-              setAvailability(event.target.value);
-              if (errors.availability) setErrors((prev) => ({ ...prev, availability: undefined }));
-            }}
-            placeholder="Mon 2PM, Tue 10AM"
-            className={errors.availability ? 'input-error' : ''}
-          />
-          {errors.availability && (
-            <span className="validation-error">{errors.availability}</span>
-          )}
-        </label>
+        <div className="time-slot-group">
+          <span className="time-slot-label">Availability</span>
+          <div className="day-selector" role="group" aria-label="Select day">
+            {DAYS.map((d) => (
+              <button
+                key={d}
+                type="button"
+                className={`day-btn${day === d ? ' day-btn-active' : ''}`}
+                onClick={() => setDay(d)}
+                aria-pressed={day === d}
+              >
+                {d}
+              </button>
+            ))}
+          </div>
+          <div className="time-inputs">
+            <label className="time-label">
+              Start time
+              <input
+                type="time"
+                value={startTime}
+                onChange={(event) => {
+                  setStartTime(event.target.value);
+                  if (errors.startTime) setErrors((prev) => ({ ...prev, startTime: undefined }));
+                }}
+                className={errors.startTime ? 'input-error' : ''}
+              />
+              {errors.startTime && <span className="validation-error">{errors.startTime}</span>}
+            </label>
+            <label className="time-label">
+              End time
+              <input
+                type="time"
+                value={endTime}
+                onChange={(event) => {
+                  setEndTime(event.target.value);
+                  if (errors.endTime) setErrors((prev) => ({ ...prev, endTime: undefined }));
+                }}
+                className={errors.endTime ? 'input-error' : ''}
+              />
+              {errors.endTime && <span className="validation-error">{errors.endTime}</span>}
+            </label>
+          </div>
+
+          <div className="availability-controls">
+            <button
+              type="button"
+              className="btn-add-availability btn"
+              onClick={() => {
+                const newErrors = {};
+                if (!startTime) newErrors.startTime = 'Start time is required.';
+                if (!endTime) newErrors.endTime = 'End time is required.';
+                if (startTime && endTime) {
+                  const toMinutes = (t) => {
+                    const [h, m] = t.split(':').map(Number);
+                    return h * 60 + m;
+                  };
+                  if (toMinutes(endTime) <= toMinutes(startTime)) {
+                    newErrors.endTime = 'End time must be after start time.';
+                  }
+                }
+                if (Object.keys(newErrors).length > 0) {
+                  setErrors((prev) => ({ ...prev, ...newErrors }));
+                  return;
+                }
+
+                const slot = formatTimeSlot({ day, start: startTime, end: endTime });
+                if (!availabilitySlots.includes(slot)) {
+                  setAvailabilitySlots((prev) => [...prev, slot]);
+                }
+                setStartTime('');
+                setEndTime('');
+              }}
+            >
+              Add Availability
+            </button>
+          </div>
+
+          <div className="availability-list">
+            {availabilitySlots.length > 0 ? (
+              availabilitySlots.map((slot, idx) => (
+                <div key={slot} className="availability-item">
+                  <span className="tag tag-availability">{slot}</span>
+                  <button
+                    type="button"
+                    className="btn-remove"
+                    onClick={() => setAvailabilitySlots((prev) => prev.filter((s) => s !== slot))}
+                    aria-label={`Remove ${slot}`}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))
+            ) : (
+              <span className="tag-empty">No availability added</span>
+            )}
+          </div>
+
+          {errors.availability && <span className="validation-error">{errors.availability}</span>}
+        </div>
 
         <button type="submit" className="btn-add">
           Add TA
