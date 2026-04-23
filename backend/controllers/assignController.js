@@ -1,12 +1,11 @@
 const { generateAssignments } = require('../services/matchingService');
 
+const isValidString = (value) => value && typeof value === 'string' && value.trim().length > 0;
+
 const validateTAs = (tas) => {
   for (let i = 0; i < tas.length; i++) {
     const ta = tas[i];
-    if (!ta.name || typeof ta.name !== 'string') {
-      return `TA at index ${i} is missing a valid "name" field.`;
-    }
-    if (!ta.name.trim()) {
+    if (!isValidString(ta.name)) {
       return `TA at index ${i} is missing a valid "name" field.`;
     }
     if (!Array.isArray(ta.skills) && typeof ta.skills !== 'string') {
@@ -22,22 +21,13 @@ const validateTAs = (tas) => {
 const validateSections = (sections) => {
   for (let i = 0; i < sections.length; i++) {
     const section = sections[i];
-    if (!section.courseName || typeof section.courseName !== 'string') {
+    if (!isValidString(section.courseName)) {
       return `Section at index ${i} is missing a valid "courseName" field.`;
     }
-    if (!section.courseName.trim()) {
-      return `Section at index ${i} is missing a valid "courseName" field.`;
-    }
-    if (!section.timeSlot || typeof section.timeSlot !== 'string') {
+    if (!isValidString(section.timeSlot)) {
       return `Section "${section.courseName}" is missing a valid "timeSlot" field.`;
     }
-    if (!section.timeSlot.trim()) {
-      return `Section "${section.courseName}" is missing a valid "timeSlot" field.`;
-    }
-    if (!section.requiredSkill || typeof section.requiredSkill !== 'string') {
-      return `Section "${section.courseName}" is missing a valid "requiredSkill" field.`;
-    }
-    if (!section.requiredSkill.trim()) {
+    if (!isValidString(section.requiredSkill)) {
       return `Section "${section.courseName}" is missing a valid "requiredSkill" field.`;
     }
   }
