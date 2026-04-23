@@ -18,23 +18,41 @@ const STATUS_FILTER_OPTIONS = ['All', 'OK', 'Conflict', 'Overloaded', 'Unassigne
 
 const getStatusConfig = (status) => STATUS_CONFIG[status] || STATUS_CONFIG.OK;
 
+const formatTimeValue = (value) => {
+  if (!value) return '—';
+  return String(value);
+};
+
+const formatAssignment = (assignment) => ({
+  ta: assignment?.ta || assignment?.taName || 'Unassigned',
+  section: assignment?.section || assignment?.course || assignment?.assignedSection || '—',
+  time: formatTimeValue(assignment?.time || assignment?.timeSlot),
+  status: assignment?.status || 'Unassigned',
+  reason: assignment?.reason || '',
+});
+
 const AssignmentTable = ({ assignments }) => {
   const [sortBy, setSortBy] = useState('none');
   const [filterStatus, setFilterStatus] = useState('All');
   const [hoveredIndex, setHoveredIndex] = useState(null);
 
+  const normalizedAssignments = useMemo(
+    () => assignments.map((assignment) => formatAssignment(assignment)),
+    [assignments]
+  );
+
   const summary = useMemo(() => {
-    const total = assignments.length;
-    const conflicts = assignments.filter((a) => a.status === 'Conflict').length;
-    const overloaded = assignments.filter((a) => a.status === 'Overloaded').length;
-    const ok = assignments.filter((a) => a.status === 'OK').length;
+    const total = normalizedAssignments.length;
+    const conflicts = normalizedAssignments.filter((a) => a.status === 'Conflict').length;
+    const overloaded = normalizedAssignments.filter((a) => a.status === 'Overloaded').length;
+    const ok = normalizedAssignments.filter((a) => a.status === 'OK').length;
     return { total, conflicts, overloaded, ok };
-  }, [assignments]);
+  }, [normalizedAssignments]);
 
   const filtered = useMemo(() => {
-    if (filterStatus === 'All') return assignments;
-    return assignments.filter((a) => a.status === filterStatus);
-  }, [assignments, filterStatus]);
+    if (filterStatus === 'All') return normalizedAssignments;
+    return normalizedAssignments.filter((a) => a.status === filterStatus);
+  }, [normalizedAssignments, filterStatus]);
 
   const sorted = useMemo(() => {
     if (sortBy === 'none') return filtered;
@@ -46,11 +64,14 @@ const AssignmentTable = ({ assignments }) => {
     });
   }, [filtered, sortBy]);
 
-  if (!assignments.length) {
+  if (!normalizedAssignments.length) {
     return (
-      <section className="card assignment-dashboard">
+      <section className="card assignment-dashboard" aria-live="polite">
         <div className="assignment-header">
-          <h2>Assignments</h2>
+          <div>
+            <p className="eyebrow">Generated assignments</p>
+            <h2>Assignments</h2>
+          </div>
         </div>
         <div className="assignment-empty">
           <span className="empty-icon" role="img" aria-label="clipboard">📋</span>
@@ -62,9 +83,12 @@ const AssignmentTable = ({ assignments }) => {
   }
 
   return (
-    <section className="card assignment-dashboard">
+    <section className="card assignment-dashboard" aria-live="polite">
       <div className="assignment-header">
-        <h2>Assignments</h2>
+        <div>
+          <p className="eyebrow">Generated assignments</p>
+          <h2>Assignments</h2>
+        </div>
         <span className="assignment-count">{assignments.length} total</span>
       </div>
 
@@ -128,10 +152,13 @@ const AssignmentTable = ({ assignments }) => {
             return (
               <div
                 key={`${item.ta}-${item.section}-${item.time}-${index}`}
-                className={`assignment-row${item.status === 'Conflict' ? ' assignment-row-conflict' : ''}`}
+                className={`assignment-row assignment-row-status-${item.status
+                  .toLowerCase()
+                  .replace(/\s+/g, '-')}`}
                 style={{ animationDelay: `${index * 60}ms` }}
                 onMouseEnter={() => setHoveredIndex(index)}
                 onMouseLeave={() => setHoveredIndex(null)}
+                title={item.reason || item.status}
               >
                 <div className="assignment-row-main">
                   <div className="assignment-ta">
