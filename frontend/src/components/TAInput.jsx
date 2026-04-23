@@ -29,6 +29,8 @@ const TAInput = ({ onAddTA, tas, onRemoveTA }) => {
   const [endTime, setEndTime] = useState('');
   const [errors, setErrors] = useState({});
 
+  const [successMessage, setSuccessMessage] = useState('');
+
   const resetForm = () => {
     setName('');
     setSkills('');
@@ -69,6 +71,8 @@ const TAInput = ({ onAddTA, tas, onRemoveTA }) => {
     });
 
     resetForm();
+    setSuccessMessage(`TA "${name.trim()}" added successfully.`);
+    setTimeout(() => setSuccessMessage(''), 3000);
   };
 
   return (
@@ -209,6 +213,12 @@ const TAInput = ({ onAddTA, tas, onRemoveTA }) => {
         <button type="submit" className="btn-add">
           Add TA
         </button>
+        {successMessage && (
+          <div className="toast-success" role="status">
+            <span className="toast-icon">✓</span>
+            {successMessage}
+          </div>
+        )}
       </form>
 
       {tas && tas.length > 0 && (

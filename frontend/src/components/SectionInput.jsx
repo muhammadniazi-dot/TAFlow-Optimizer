@@ -23,6 +23,8 @@ const SectionInput = ({ onAddSection, sections, onRemoveSection }) => {
   const [requiredSkill, setRequiredSkill] = useState('');
   const [errors, setErrors] = useState({});
 
+  const [successMessage, setSuccessMessage] = useState('');
+
   const resetForm = () => {
     setCourseName('');
     setDay('Mon');
@@ -75,6 +77,8 @@ const SectionInput = ({ onAddSection, sections, onRemoveSection }) => {
     });
 
     resetForm();
+    setSuccessMessage(`Section "${courseName.trim()}" added successfully.`);
+    setTimeout(() => setSuccessMessage(''), 3000);
   };
 
   return (
@@ -162,6 +166,12 @@ const SectionInput = ({ onAddSection, sections, onRemoveSection }) => {
         <button type="submit" className="btn-add">
           Add Section
         </button>
+        {successMessage && (
+          <div className="toast-success" role="status">
+            <span className="toast-icon">✓</span>
+            {successMessage}
+          </div>
+        )}
       </form>
 
       {sections && sections.length > 0 && (

@@ -31,7 +31,7 @@ const formatAssignment = (assignment) => ({
   reason: assignment?.reason || '',
 });
 
-const AssignmentTable = ({ assignments }) => {
+const AssignmentTable = ({ assignments, isLoading }) => {
   const [sortBy, setSortBy] = useState('none');
   const [filterStatus, setFilterStatus] = useState('All');
   const [hoveredIndex, setHoveredIndex] = useState(null);
@@ -63,6 +63,24 @@ const AssignmentTable = ({ assignments }) => {
       return 0;
     });
   }, [filtered, sortBy]);
+
+  if (isLoading) {
+    return (
+      <section className="card assignment-dashboard" aria-live="polite" aria-busy="true">
+        <div className="assignment-header">
+          <div>
+            <p className="eyebrow">Generated assignments</p>
+            <h2>Assignments</h2>
+          </div>
+        </div>
+        <div className="assignment-loading">
+          {[1, 2, 3].map((n) => (
+            <div key={n} className="skeleton-row" aria-hidden="true" />
+          ))}
+        </div>
+      </section>
+    );
+  }
 
   if (!normalizedAssignments.length) {
     return (
