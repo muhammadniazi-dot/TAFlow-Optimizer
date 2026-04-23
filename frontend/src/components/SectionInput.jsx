@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 
@@ -24,6 +24,13 @@ const SectionInput = ({ onAddSection, sections, onRemoveSection }) => {
   const [errors, setErrors] = useState({});
 
   const [successMessage, setSuccessMessage] = useState('');
+  const toastTimerRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    };
+  }, []);
 
   const resetForm = () => {
     setCourseName('');
@@ -78,7 +85,8 @@ const SectionInput = ({ onAddSection, sections, onRemoveSection }) => {
 
     resetForm();
     setSuccessMessage(`Section "${courseName.trim()}" added successfully.`);
-    setTimeout(() => setSuccessMessage(''), 3000);
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => setSuccessMessage(''), 3000);
   };
 
   return (
