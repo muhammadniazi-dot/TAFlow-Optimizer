@@ -7,6 +7,10 @@ const statusClass = (status) => {
     return 'status-overloaded';
   }
 
+  if (status === 'Unassigned') {
+    return 'status-unassigned';
+  }
+
   return 'status-ok';
 };
 
@@ -31,6 +35,7 @@ const AssignmentTable = ({ assignments }) => {
               <th>Section</th>
               <th>Time</th>
               <th>Status</th>
+              <th>Reason</th>
             </tr>
           </thead>
           <tbody>
@@ -42,6 +47,7 @@ const AssignmentTable = ({ assignments }) => {
                 <td>
                   <span className={`status-badge ${statusClass(item.status)}`}>{item.status}</span>
                 </td>
+                <td className="reason-cell">{item.reason || '—'}</td>
               </tr>
             ))}
           </tbody>

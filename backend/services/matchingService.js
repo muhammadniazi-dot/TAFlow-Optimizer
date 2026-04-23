@@ -77,6 +77,19 @@ const chooseBestTA = (taPool, section) => {
   return bestCandidate;
 };
 
+const buildReason = (ta, section, hasTimeConflict, isAvailable, isOverloaded) => {
+  if (isOverloaded) {
+    return `${ta.name} has been assigned more than 2 sections, exceeding recommended workload`;
+  }
+  if (hasTimeConflict) {
+    return `${ta.name} has a time slot conflict at ${section.timeSlot}`;
+  }
+  if (!isAvailable) {
+    return `${ta.name} was selected due to matching skill but is not available at ${section.timeSlot}`;
+  }
+  return `Selected due to matching skill (${section.requiredSkill}) and availability at ${section.timeSlot}`;
+};
+
 const generateAssignments = (tas = [], sections = []) => {
   const taPool = tas.map(toTARecord).filter((ta) => ta.name);
   const normalizedSections = sections.map((section) => ({
@@ -94,9 +107,10 @@ const generateAssignments = (tas = [], sections = []) => {
         ta: 'Unassigned',
         section: section.courseName || 'Unknown Section',
         time: section.timeSlot || 'Unknown Time',
-        status: 'Conflict'
+        status: 'Unassigned',
+        reason: 'Section is missing required fields (courseName, timeSlot, or requiredSkill)'
       });
-      issueFlags.push({ taName: null, timeConflict: true });
+      issueFlags.push({ taName: null, timeConflict: false, unassigned: true });
       continue;
     }
 
@@ -107,9 +121,10 @@ const generateAssignments = (tas = [], sections = []) => {
         ta: 'Unassigned',
         section: section.courseName,
         time: section.timeSlot,
-        status: 'Conflict'
+        status: 'Unassigned',
+        reason: `No TA with the required skill (${section.requiredSkill}) is available`
       });
-      issueFlags.push({ taName: null, timeConflict: true });
+      issueFlags.push({ taName: null, timeConflict: false, unassigned: true });
       continue;
     }
 
@@ -121,10 +136,11 @@ const generateAssignments = (tas = [], sections = []) => {
       ta: ta.name,
       section: section.courseName,
       time: section.timeSlot,
-      status: hasTimeConflict || !isAvailable ? 'Conflict' : 'OK'
+      status: hasTimeConflict || !isAvailable ? 'Conflict' : 'OK',
+      reason: buildReason(ta, section, hasTimeConflict, isAvailable, false)
     });
 
-    issueFlags.push({ taName: ta.name, timeConflict: hasTimeConflict || !isAvailable });
+    issueFlags.push({ taName: ta.name, timeConflict: hasTimeConflict || !isAvailable, unassigned: false });
   }
 
   const taAssignmentCounts = taPool.reduce((accumulator, ta) => {
@@ -140,16 +156,23 @@ const generateAssignments = (tas = [], sections = []) => {
   const finalAssignments = assignments.map((assignment, index) => {
     const taName = assignment.ta;
     const overload = taOverloaded[taName];
-    const hasConflict = issueFlags[index]?.timeConflict;
+    const flag = issueFlags[index];
+
+    if (flag?.unassigned) {
+      return assignment;
+    }
 
     if (overload) {
+      const ta = taPool.find((t) => t.name === taName);
+      const section = normalizedSections[index];
       return {
         ...assignment,
-        status: 'Overloaded'
+        status: 'Overloaded',
+        reason: ta && section ? buildReason(ta, section, false, true, true) : 'TA has exceeded recommended workload'
       };
     }
 
-    if (hasConflict) {
+    if (flag?.timeConflict) {
       return {
         ...assignment,
         status: 'Conflict'

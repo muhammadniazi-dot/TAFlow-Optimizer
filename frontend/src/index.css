@@ -276,6 +276,17 @@ td {
   color: #9a3412;
 }
 
+.status-unassigned {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.reason-cell {
+  font-size: 13px;
+  color: #4b5563;
+  max-width: 280px;
+}
+
 .error-text {
   color: #b91c1c;
   margin-top: 10px;
