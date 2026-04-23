@@ -55,11 +55,87 @@ const calculateScore = (ta, section) => {
 };
 
 /**
- * Detect whether assigning this TA to the given time would create a time conflict
- * (i.e., the TA already has another assignment at the same time slot).
+ * Post-process a list of assignments to detect scheduling conflicts and
+ * workload overloads, then annotate each assignment with a status and reason.
+ *
+ * Status priority (highest → lowest): Conflict > Overloaded > OK
+ *
+ * @param {Array}  assignments    - Array of assignment objects produced by generateAssignments.
+ * @param {number} maxAssignments - Maximum allowed assignments per TA before "Overloaded".
+ * @returns {{ assignments: Array, summary: { totalConflicts: number, overloadedTAs: number } }}
  */
-const detectConflicts = (ta, time) => {
-  return ta.assignedTimeSlots.has(time.toLowerCase());
+const isUnassigned = (assignment) =>
+  !assignment || !assignment.ta || assignment.ta === 'Unassigned';
+
+const detectConflicts = (assignments, maxAssignments = MAX_ASSIGNMENTS_PER_TA) => {
+  if (!Array.isArray(assignments) || assignments.length === 0) {
+    return { assignments: [], summary: { totalConflicts: 0, overloadedTAs: 0 } };
+  }
+
+  // taLoadMap:     taName → [array of assignment indices]
+  // taScheduleMap: taName → { normalizedTime → [array of assignment indices] }
+  const taLoadMap = {};
+  const taScheduleMap = {};
+
+  assignments.forEach((assignment, index) => {
+    if (isUnassigned(assignment)) return;
+
+    const taName = assignment.ta;
+    const time = assignment.time ? String(assignment.time).toLowerCase() : '';
+
+    if (!taLoadMap[taName]) taLoadMap[taName] = [];
+    taLoadMap[taName].push(index);
+
+    if (!taScheduleMap[taName]) taScheduleMap[taName] = {};
+    if (!taScheduleMap[taName][time]) taScheduleMap[taName][time] = [];
+    taScheduleMap[taName][time].push(index);
+  });
+
+  // Collect indices of all conflicting assignments (same TA, same time slot)
+  const conflictIndices = new Set();
+  Object.values(taScheduleMap).forEach((timeMap) => {
+    Object.values(timeMap).forEach((indices) => {
+      if (indices.length > 1) {
+        indices.forEach((i) => conflictIndices.add(i));
+      }
+    });
+  });
+
+  // Collect names of overloaded TAs (exceeding maxAssignments)
+  const overloadedTANames = new Set();
+  Object.entries(taLoadMap).forEach(([taName, indices]) => {
+    if (indices.length > maxAssignments) {
+      overloadedTANames.add(taName);
+    }
+  });
+
+  // Annotate each assignment – Conflict takes priority over Overloaded
+  assignments.forEach((assignment, index) => {
+    if (isUnassigned(assignment)) {
+      assignment.status = 'Unassigned';
+      assignment.reason = 'No suitable TA available';
+      return;
+    }
+
+    if (conflictIndices.has(index)) {
+      assignment.status = 'Conflict';
+      assignment.reason = 'TA assigned to overlapping time slots';
+    } else if (overloadedTANames.has(assignment.ta)) {
+      assignment.status = 'Overloaded';
+      assignment.reason = 'TA exceeds recommended workload';
+    } else {
+      assignment.status = 'OK';
+      assignment.reason = 'Assignment valid';
+    }
+  });
+
+  return {
+    assignments,
+    summary: {
+      totalConflicts: conflictIndices.size,
+      overloadedTAs: overloadedTANames.size
+    }
+  };
 };
 
 const generateAssignments = (tas = [], sections = []) => {
@@ -82,7 +158,7 @@ const generateAssignments = (tas = [], sections = []) => {
         section: section.course || 'Unknown Section',
         time: section.time || 'Unknown Time',
         status: 'Unassigned',
-        reason: 'No suitable TA found'
+        reason: 'No suitable TA available'
       };
     }
 
@@ -94,7 +170,7 @@ const generateAssignments = (tas = [], sections = []) => {
         section: section.course,
         time: section.time,
         status: 'Unassigned',
-        reason: 'No suitable TA found'
+        reason: 'No suitable TA available'
       };
     }
 
@@ -109,35 +185,23 @@ const generateAssignments = (tas = [], sections = []) => {
     });
 
     const bestTA = candidateScores[0].ta;
-    const hasTimeConflict = detectConflicts(bestTA, section.time);
 
     bestTA.assignments.push(section.course);
     bestTA.assignedTimeSlots.add(section.time.toLowerCase());
-
-    const isOverloaded = bestTA.assignments.length > MAX_ASSIGNMENTS_PER_TA;
-
-    let status = 'OK';
-    let reason = 'Matched based on skill and availability';
-
-    if (hasTimeConflict) {
-      status = 'Conflict';
-    } else if (isOverloaded) {
-      status = 'Overloaded';
-      reason = 'Assigned despite high workload';
-    }
 
     return {
       ta: bestTA.name,
       section: section.course,
       time: section.time,
-      status,
-      reason
+      status: 'OK',
+      reason: 'Assignment valid'
     };
   });
 
-  return { assignments };
+  return detectConflicts(assignments);
 };
 
 module.exports = {
-  generateAssignments
+  generateAssignments,
+  detectConflicts
 };
